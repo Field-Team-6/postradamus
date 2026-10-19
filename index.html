@@ -88,7 +88,7 @@ textarea{min-height:120px;resize:vertical}
     <div class="hint">Paste the app key Claude gave you. It stays on this phone.</div>
     <input type="text" id="appkey" placeholder="App key" autocomplete="off">
     <div class="row"><button type="button" id="savekey">Save</button><span class="hint" id="keyhint"></span></div>
-    <div class="hint">One-time approvals (do these from a computer, once): <a href="/.netlify/functions/google-auth" target="_blank">Google Drive</a> · <a href="/.netlify/functions/metricool-auth" target="_blank">Metricool</a></div>
+    <div class="hint">One-time approvals (do these from a computer, once): <a id="gauth" href="/.netlify/functions/google-auth" target="_blank">Google Drive</a> · <a id="mauth" href="/.netlify/functions/metricool-auth" target="_blank">Metricool</a></div>
   </section>
 
   <section class="card">
@@ -346,6 +346,8 @@ $("goBtn").addEventListener("click", go);
 $("gear").addEventListener("click", ()=>{ $("setupcard").hidden=!$("setupcard").hidden; $("appkey").value=appKey; });
 $("savekey").addEventListener("click", ()=>{ appKey=$("appkey").value.trim(); ls.set("appkey", appKey); $("keyhint").textContent="Saved"; updateReady(); });
 const urlKey = new URLSearchParams(location.search).get("key"); if (urlKey){ appKey=urlKey; ls.set("appkey", appKey); history.replaceState(null,"",location.pathname); }
+function authLinks(){ for (const id of ["gauth","mauth"]) { const a=$(id); if(a) a.href=a.href.split("?")[0]+"?key="+encodeURIComponent(appKey); } }
+authLinks(); $("savekey").addEventListener("click", authLinks);
 if (!appKey) $("setupcard").hidden=false;
 renderHistory();
 setMode(MODES[ls.get("mode","dailyjason")] ? ls.get("mode","dailyjason") : "dailyjason");
