@@ -1,5 +1,7 @@
 // Shared helpers for Postradamus functions.
-const { getStore } = require('@netlify/blobs');
+const { getStore, connectLambda } = require('@netlify/blobs');
+// Classic-style functions must hand their event to Blobs before using it.
+function connect(event) { try { if (event && event.blobs) connectLambda(event); } catch (e) {} }
 
 const JSON_HEADERS = {
   'Content-Type': 'application/json',
@@ -123,4 +125,4 @@ async function mcpCall(toolName, args) {
   return payload;
 }
 
-module.exports = { reply, preflight, checkAppKey, store, siteUrl, googleAccessToken, driveList, driveFindFolder, driveEnsureFolder, mcpMeta, metricoolTokens, mcpCall, MCP_URL };
+module.exports = { connect, reply, preflight, checkAppKey, store, siteUrl, googleAccessToken, driveList, driveFindFolder, driveEnsureFolder, mcpMeta, metricoolTokens, mcpCall, MCP_URL };
