@@ -17,7 +17,7 @@ function preflight(event) {
 // A simple shared secret so only Jason's installed app can call the posting functions.
 function checkAppKey(event) {
   const want = process.env.APP_KEY;
-  if (!want) return true; // not configured yet
+  if (!want) return false; // locked until APP_KEY is set
   const got = (event.headers['x-app-key'] || event.headers['X-App-Key'] || (event.queryStringParameters || {}).key || '');
   return got === want;
 }
@@ -28,10 +28,13 @@ function siteUrl(event) {
 
 // ---------- Google ----------
 async function googleAccessToken() {
+  let refresh = process.env.GOOGLE_REFRESH_TOKEN;
+  if (!refresh) { const g = await store().get('google', { type: 'json' }); refresh = g && g.refresh_token; }
+  if (!refresh) throw new Error('Google Drive is not approved yet. Open Settings → Google Drive once.');
   const body = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID,
     client_secret: process.env.GOOGLE_CLIENT_SECRET,
-    refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+    refresh_token: refresh,
     grant_type: 'refresh_token'
   });
   const r = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
