@@ -23,7 +23,7 @@ function checkAppKey(event) {
   const got = (event.headers['x-app-key'] || event.headers['X-App-Key'] || (event.queryStringParameters || {}).key || '');
   return got === want;
 }
-function store() { return getStore({ name: 'postradamus', consistency: 'strong' }); }
+function store() { return getStore('postradamus'); }
 function siteUrl(event) {
   return process.env.URL || ('https://' + event.headers.host);
 }
