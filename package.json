@@ -1,0 +1,9 @@
+{
+  "name": "postradamus",
+  "version": "1.0.0",
+  "private": true,
+  "description": "One-tap video posting for Field Team 6 and Jason's personal channels",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}
