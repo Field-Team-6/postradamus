@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Postradamus</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1b4fd8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#f3f5f9; --card:#ffffff; --fg:#121a2b; --muted:#5d6678; --line:#d6dbe5; --field:#f8f9fc;
+  --accent:#1b4fd8; --accent-fg:#ffffff; --personal:#7a2fb3; --rec:#d8321b; --ok:#1f7a3f; --warn:#b4541a; --bad:#c8321f;
+  --display:"Barlow Condensed","Arial Narrow",Impact,sans-serif; --body:"Barlow","Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root{
+  --bg:#0f1420; --card:#181f2e; --fg:#eef1f7; --muted:#9aa3b5; --line:#2b3447; --field:#131927;
+  --accent:#5b86ff; --accent-fg:#0f1420; --personal:#b88aff; --rec:#ff5a3c; --ok:#7fd49a; --warn:#e39a5a; --bad:#ff6b5a; color-scheme:dark } }
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:max(48px,env(safe-area-inset-bottom,0px))}
+.top{position:sticky;top:0;z-index:9;background:var(--accent);color:var(--accent-fg);
+  margin-left:calc(-1 * max(16px,env(safe-area-inset-left,0px)));margin-right:calc(-1 * max(16px,env(safe-area-inset-right,0px)));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:calc(10px + env(safe-area-inset-top,0px));padding-bottom:10px;
+  display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+body.personal .top{background:var(--personal);color:#fff}
+.top h1{font-family:var(--display);font-weight:800;font-size:26px;letter-spacing:.02em;text-transform:uppercase;margin:0}
+.top .brand{font-size:13px;font-weight:600;opacity:.9}
+.top button{background:transparent;border:1px solid rgba(255,255,255,.5);color:inherit;padding:4px 10px;font-size:13px;border-radius:999px}
+main{max-width:560px;margin:0 auto;display:grid;gap:16px;padding-top:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:10px;min-width:0}
+.card h2{font-family:var(--display);font-weight:700;font-size:22px;margin:0;letter-spacing:.01em}
+.card h2 small{font-family:var(--body);font-weight:500;font-size:13px;color:var(--muted);margin-left:8px}
+.modes{display:grid;gap:8px}
+.modes button{text-align:left;display:grid;gap:2px;padding:12px 14px}
+.modes button b{font-family:var(--display);font-size:20px;letter-spacing:.01em}
+.modes button span{font-size:13px;color:var(--muted);font-weight:500}
+.modes button.on{outline:2px solid var(--accent);outline-offset:-1px}
+body.personal .modes button.on{outline-color:var(--personal)}
+.stage{position:relative;width:100%;aspect-ratio:9/16;max-height:62vh;background:#000;border-radius:10px;overflow:hidden;justify-self:center}
+.stage video,.stage img{width:100%;height:100%;object-fit:cover;display:block;background:#000}
+.stage .timer{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.6);color:#fff;font-variant-numeric:tabular-nums;font-weight:600;padding:4px 10px;border-radius:999px;font-size:15px}
+.stage .timer.live::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--rec);margin-right:7px;vertical-align:1px}
+.stage .empty{position:absolute;inset:0;display:grid;place-items:center;color:#cfd6e4;text-align:center;padding:20px;font-size:15px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button{font:inherit;font-weight:600;font-size:16px;padding:12px 18px;border-radius:10px;cursor:pointer;color:var(--fg);background:var(--field);border:1px solid var(--line)}
+button:disabled{opacity:.5;cursor:default}
+button.rec{background:var(--rec);color:#fff;border-color:transparent;flex:1;font-family:var(--display);font-size:22px;letter-spacing:.03em;text-transform:uppercase}
+button.go{background:var(--accent);color:var(--accent-fg);border-color:transparent;width:100%;font-family:var(--display);font-size:26px;letter-spacing:.03em;text-transform:uppercase;padding:16px}
+body.personal button.go{background:var(--personal);color:#fff}
+label.file{display:inline-block;font-weight:600;padding:12px 18px;border-radius:10px;background:var(--field);border:1px solid var(--line);cursor:pointer}
+label.file input{position:absolute;width:1px;height:1px;opacity:0}
+textarea,input[type=url],input[type=text]{width:100%;font:inherit;font-size:16px;line-height:1.45;color:var(--fg);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:12px}
+textarea{min-height:120px;resize:vertical}
+.count{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.count.warn{color:var(--warn)}
+.nets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.nets label{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--field);font-weight:500;min-width:0}
+.nets label.off{color:var(--muted)}
+.nets input{width:18px;height:18px;accent-color:var(--accent);flex:none}
+.nets .grp{grid-column:1/-1;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-top:4px}
+.hint{font-size:13px;color:var(--muted)}
+.hint.bad{color:var(--bad);font-weight:600}
+.hint.ok{color:var(--ok);font-weight:600}
+.log{display:grid;gap:6px;font-size:15px}
+.log .ok{color:var(--ok);font-weight:600}
+.log .bad{color:var(--bad);font-weight:600}
+.log a{color:var(--accent)}
+.bar{height:8px;background:var(--line);border-radius:999px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.hist{display:grid;gap:8px}
+.hist .item{display:grid;gap:3px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px}
+.hist .when{color:var(--muted);font-size:13px}
+.hist .st.ok{color:var(--ok);font-weight:600}.hist .st.bad{color:var(--bad);font-weight:600}
+.setup{display:grid;gap:10px}
+</style>
+</head>
+<body>
+<div class="top"><h1>Postradamus</h1><span class="brand" id="brandtag">Field Team 6</span><button type="button" id="gear" aria-label="Settings">⚙︎</button></div>
+
+<main>
+  <section class="card setup" id="setupcard" hidden>
+    <h2>Setup</h2>
+    <div class="hint">Paste the app key Claude gave you. It stays on this phone.</div>
+    <input type="text" id="appkey" placeholder="App key" autocomplete="off">
+    <div class="row"><button type="button" id="savekey">Save</button><span class="hint" id="keyhint"></span></div>
+    <div class="hint">One-time approvals (do these from a computer, once): <a href="/.netlify/functions/google-auth" target="_blank">Google Drive</a> · <a href="/.netlify/functions/metricool-auth" target="_blank">Metricool</a></div>
+  </section>
+
+  <section class="card">
+    <h2>What are we posting?</h2>
+    <div class="modes" id="modes"></div>
+  </section>
+
+  <section class="card" id="mediacard">
+    <h2 id="mediahead">1. Record <small>up to 90 seconds</small></h2>
+    <div class="stage">
+      <video id="preview" playsinline muted autoplay hidden></video>
+      <video id="playback" playsinline controls hidden></video>
+      <img id="imgprev" alt="" hidden>
+      <div class="empty" id="stageempty">Tap <b>&nbsp;Start camera&nbsp;</b> to see yourself here.</div>
+      <div class="timer" id="timer" hidden>0:00</div>
+    </div>
+    <div class="row" id="camrow">
+      <button type="button" id="camBtn">Start camera</button>
+      <button type="button" class="rec" id="recBtn" hidden>Record</button>
+      <button type="button" id="redoBtn" hidden>Record again</button>
+    </div>
+    <div class="row">
+      <label class="file" id="filelabel"><span id="filelabeltext">Use a video already on my phone</span><input type="file" id="fileIn" accept="video/*"></label>
+      <span class="hint" id="vidhint">Nothing recorded yet.</span>
+    </div>
+  </section>
+
+  <section class="card" id="linkcard" hidden>
+    <h2>1. Latest episode <small id="epstate">looking it up…</small></h2>
+    <input type="url" id="eplink" placeholder="https://practivistpod.substack.com/p/…" inputmode="url">
+    <div class="row"><button type="button" id="refreshEp">Check again</button><span class="hint" id="ephint"></span></div>
+  </section>
+
+  <section class="card">
+    <h2>2. Caption</h2>
+    <textarea id="caption" placeholder="This text goes on every network."></textarea>
+    <div class="row"><span class="count" id="capcount">0 characters</span><span class="hint" id="caphint"></span></div>
+  </section>
+
+  <section class="card">
+    <h2>3. Where it goes</h2>
+    <div class="nets" id="nets"></div>
+  </section>
+
+  <section class="card">
+    <h2>4. Send it</h2>
+    <div class="hint" id="gohint"></div>
+    <button type="button" class="go" id="goBtn" disabled>Upload &amp; post</button>
+    <div class="bar" id="bar" hidden><i id="barfill"></i></div>
+    <div class="log" id="log"></div>
+  </section>
+
+  <section class="card">
+    <h2>Recent <small id="histnote"></small></h2>
+    <div class="hist" id="hist"></div>
+  </section>
+</main>
+
+<script>
+const FN = '/.netlify/functions/';
+const MAX_SECONDS = 90, BLUESKY_LIMIT = 300;
+const MODES = {
+  dailyjason: { label:"Daily Jason", sub:"Video → every Field Team 6 network and your personal ones", media:"video", brand:"ft6" },
+  practivist: { label:"Latest Practivist", sub:"Newest episode, link + cover filled in for you → personal networks", media:"image", brand:"personal" },
+  personal:   { label:"Personal video", sub:"Video → your personal networks only", media:"video", brand:"personal" },
+};
+const NETWORKS = [
+  { id:"facebook", name:"Facebook (Reel)", group:"ft6" }, { id:"instagram", name:"Instagram (Reel)", group:"ft6" }, { id:"threads", name:"Threads", group:"ft6" },
+  { id:"bluesky", name:"Bluesky", group:"ft6" }, { id:"tiktok", name:"TikTok", group:"ft6" }, { id:"youtube", name:"YouTube (Short)", group:"ft6" },
+  { id:"instagram", name:"Instagram", group:"personal" }, { id:"threads", name:"Threads", group:"personal" }, { id:"bluesky", name:"Bluesky", group:"personal" },
+];
+const GROUPS = { ft6:"Field Team 6", personal:"Jason personal" };
+const DEFAULT_ON = { "ft6:facebook":true, "ft6:instagram":true, "ft6:threads":true, "ft6:bluesky":true, "ft6:tiktok":false, "ft6:youtube":false, "personal:instagram":true, "personal:threads":true, "personal:bluesky":true };
+
+const $ = id => document.getElementById(id);
+const ls = { get(k,d){ try{ const v=localStorage.getItem(k); return v===null?d:JSON.parse(v);}catch(e){return d;} }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} } };
+let mode="dailyjason", enabled = { ...DEFAULT_ON, ...ls.get("nets",{}) }, appKey = ls.get("appkey","");
+let stream=null, recorder=null, chunks=[], recStart=0, recTick=null, blob=null, blobMime="video/mp4", durationSec=0, busy=false, epImage="";
+
+function fmt(s){ s=Math.max(0,Math.round(s)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
+function logLine(cls, text, link, linkText){ const d=document.createElement("div"); d.className=cls; d.textContent=text; if(link){ d.append(" "); const a=document.createElement("a"); a.href=link; a.target="_blank"; a.rel="noopener"; a.textContent=linkText||"Open"; d.append(a);} $("log").append(d); return d; }
+function setBar(p){ $("bar").hidden=false; $("barfill").style.width=Math.round(p*100)+"%"; }
+function captionText(){ return $("caption").value.trim(); }
+function epLink(){ return $("eplink").value.trim(); }
+function activeGroups(){ return MODES[mode].brand==="ft6" ? ["ft6","personal"] : ["personal"]; }
+function activeNets(){ return NETWORKS.filter(n => activeGroups().includes(n.group) && enabled[n.group+":"+n.id]); }
+async function api(name, body){
+  const r = await fetch(FN+name, { method: body?"POST":"GET", headers: { "Content-Type":"application/json", "X-App-Key": appKey }, body: body?JSON.stringify(body):undefined });
+  const j = await r.json().catch(()=>({ error:"Server gave a non-JSON answer ("+r.status+")" }));
+  if (!r.ok || j.error) throw new Error(j.error || ("Server error "+r.status));
+  return j;
+}
+
+function setMode(m){
+  mode=m; const M=MODES[m];
+  document.body.classList.toggle("personal", M.brand==="personal");
+  $("brandtag").textContent = M.brand==="ft6" ? "Field Team 6 + personal" : "Jason personal";
+  for (const b of $("modes").children) b.classList.toggle("on", b.dataset.mode===m);
+  const video = M.media==="video";
+  $("mediacard").hidden = !video; $("linkcard").hidden = video;
+  if (!video) stopCamera();
+  blob=null; epImage=""; $("playback").hidden=true; $("imgprev").hidden=true; $("stageempty").hidden=false; $("camBtn").hidden=false; $("recBtn").hidden=true; $("redoBtn").hidden=true; $("timer").hidden=true;
+  $("vidhint").textContent="Nothing recorded yet."; $("vidhint").className="hint";
+  $("caption").placeholder = m==="practivist" ? "New Practivist pod is out! …" : m==="personal" ? "Caption for your personal accounts." : "What's today's Daily Jason about?";
+  ls.set("mode", m);
+  renderNets(); updateReady();
+  if (m==="practivist") loadEpisode();
+}
+async function loadEpisode(){
+  $("epstate").textContent="looking it up…"; $("ephint").textContent="";
+  try {
+    const ep = await api("practivist-latest");
+    $("eplink").value = ep.link || ""; epImage = ep.image || "";
+    if (!captionText() || ls.get("autocap",true)) { $("caption").value = ep.caption || ""; }
+    $("epstate").textContent = ep.title ? ep.title : "found"; $("ephint").textContent = ep.pubDate ? "Published "+new Date(ep.pubDate).toLocaleDateString("en-US",{month:"short",day:"numeric"}) + (epImage ? " · cover image attached" : " · no cover image found") : "";
+  } catch(e){ $("epstate").textContent="couldn't load"; $("ephint").textContent=e.message; $("ephint").className="hint bad"; }
+  updateReady();
+}
+function updateReady(){
+  const cap=captionText(); const full = (mode==="practivist" && epLink()) ? cap+"\n\n"+epLink() : cap; const n=[...full].length;
+  $("capcount").textContent = [...cap].length + " characters" + (mode==="practivist" && epLink() ? " (+ link)" : "");
+  const bsOn = activeNets().some(x=>x.id==="bluesky");
+  $("capcount").classList.toggle("warn", bsOn && n > BLUESKY_LIMIT);
+  $("caphint").textContent = bsOn && n > BLUESKY_LIMIT ? "Over 300: Bluesky gets a shortened copy." : "";
+  const nets=activeNets(); let why="";
+  if (!appKey) why = "Add the app key in ⚙︎ Settings first.";
+  else if (MODES[mode].media==="video" && !blob) why = "Record a video first.";
+  else if (mode==="practivist" && !/^https?:\/\//.test(epLink())) why = "Need the episode link.";
+  else if (mode==="practivist" && !epImage && !blob) why = "No cover image found — choose one below.";
+  else if (!cap) why = "Write a caption.";
+  else if (!nets.length) why = "Pick at least one network.";
+  const groups=[...new Set(nets.map(x=>x.group))].map(g=>GROUPS[g]).join(" and ");
+  $("gohint").textContent = why || ((MODES[mode].media==="video" ? "Saves the video to Drive, then posts to " : "Posts to ") + nets.length + " network" + (nets.length>1?"s":"") + " on " + groups + ". Goes out about a minute later.");
+  $("goBtn").disabled = !!why || busy;
+}
+function renderNets(){
+  const wrap=$("nets"); wrap.innerHTML="";
+  for (const g of activeGroups()){
+    const h=document.createElement("div"); h.className="grp"; h.textContent=GROUPS[g]; wrap.append(h);
+    for (const n of NETWORKS.filter(x=>x.group===g)){
+      const key=g+":"+n.id; const l=document.createElement("label"); l.className = enabled[key]?"":"off";
+      const c=document.createElement("input"); c.type="checkbox"; c.checked=!!enabled[key];
+      c.addEventListener("change", ()=>{ enabled[key]=c.checked; l.className=c.checked?"":"off"; ls.set("nets", enabled); updateReady(); });
+      l.append(c, document.createTextNode(n.name)); wrap.append(l);
+    }
+  }
+}
+
+// ---- camera ----
+function pickMime(){ const c=['video/mp4;codecs="avc1.42E01E,mp4a.40.2"','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm']; for (const m of c) if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m; return ""; }
+async function startCamera(){
+  try { stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"user", width:{ideal:720}, height:{ideal:1280}, frameRate:{ideal:30} }, audio:true }); }
+  catch(e){ $("vidhint").textContent="Camera blocked: "+e.message+". Allow the camera for this app in your phone's settings, or pick a video below."; $("vidhint").className="hint bad"; return; }
+  const v=$("preview"); v.srcObject=stream; v.hidden=false; $("playback").hidden=true; $("imgprev").hidden=true; $("stageempty").hidden=true;
+  $("camBtn").hidden=true; $("recBtn").hidden=false; $("redoBtn").hidden=true; $("timer").hidden=false; $("timer").textContent="0:00"; $("timer").classList.remove("live");
+}
+function stopCamera(){ if (stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } $("preview").srcObject=null; $("preview").hidden=true; }
+function startRec(){
+  const mime=pickMime(); if (!mime){ $("vidhint").textContent="This browser can't record. Pick a video below instead."; $("vidhint").className="hint bad"; return; }
+  chunks=[]; blobMime=mime.split(";")[0];
+  try { recorder=new MediaRecorder(stream,{ mimeType:mime, videoBitsPerSecond:2500000, audioBitsPerSecond:96000 }); } catch(e){ recorder=new MediaRecorder(stream); }
+  recorder.ondataavailable=e=>{ if (e.data && e.data.size) chunks.push(e.data); };
+  recorder.onstop=finishRec; recorder.start(1000); recStart=Date.now();
+  $("recBtn").textContent="Stop"; $("timer").classList.add("live");
+  recTick=setInterval(()=>{ const s=(Date.now()-recStart)/1000; $("timer").textContent=fmt(s)+" / "+fmt(MAX_SECONDS); if (s>=MAX_SECONDS) stopRec(); },250);
+}
+function stopRec(){ clearInterval(recTick); if (recorder && recorder.state!=="inactive") recorder.stop(); }
+function finishRec(){
+  durationSec=(Date.now()-recStart)/1000; blob=new Blob(chunks,{type:blobMime}); stopCamera(); showPlayback();
+  $("recBtn").hidden=true; $("recBtn").textContent="Record"; $("redoBtn").hidden=false; $("timer").classList.remove("live"); $("timer").textContent=fmt(durationSec);
+  $("vidhint").textContent=fmt(durationSec)+" · "+(blob.size/1048576).toFixed(1)+" MB · ready"; $("vidhint").className="hint ok"; updateReady();
+}
+function showPlayback(){ const p=$("playback"); if (p.src) URL.revokeObjectURL(p.src); p.src=URL.createObjectURL(blob); p.hidden=false; $("preview").hidden=true; $("imgprev").hidden=true; $("stageempty").hidden=true; }
+async function usePickedFile(file){
+  if (!file) return;
+  if (MODES[mode].media==="image"){
+    blob=file; blobMime=file.type||"image/jpeg"; epImage="";
+    $("mediacard").hidden=false; $("camrow").hidden=true; const i=$("imgprev"); i.src=URL.createObjectURL(file); i.hidden=false; $("stageempty").hidden=true; $("playback").hidden=true;
+    $("vidhint").textContent="Cover image chosen"; $("vidhint").className="hint ok"; updateReady(); return;
+  }
+  stopCamera(); $("camBtn").hidden=false; $("recBtn").hidden=true; $("redoBtn").hidden=true;
+  blob=file; blobMime=file.type||"video/mp4"; durationSec=0; showPlayback();
+  const p=$("playback"); await new Promise(r=>{ p.onloadedmetadata=()=>r(); setTimeout(r,3000); });
+  durationSec = isFinite(p.duration) ? p.duration : 0;
+  if (durationSec > MAX_SECONDS+5){ $("vidhint").textContent="That video is "+fmt(durationSec)+". 90 seconds max — trim it in Photos first."; $("vidhint").className="hint bad"; blob=null; updateReady(); return; }
+  $("vidhint").textContent=(durationSec?fmt(durationSec)+" · ":"")+(blob.size/1048576).toFixed(1)+" MB · ready"; $("vidhint").className="hint ok"; updateReady();
+}
+
+// ---- Drive upload straight from the phone (resumable) ----
+function uploadToDrive(prep, file, mime, onProgress){
+  return new Promise(async (resolve, reject)=>{
+    try {
+      const start = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true", { method:"POST",
+        headers:{ "Authorization":"Bearer "+prep.accessToken, "Content-Type":"application/json; charset=UTF-8", "X-Upload-Content-Type":mime, "X-Upload-Content-Length":String(file.size) },
+        body: JSON.stringify({ name: prep.filename, parents:[prep.folderId] }) });
+      if (!start.ok) return reject(new Error("Drive refused the upload ("+start.status+")"));
+      const loc = start.headers.get("Location"); if (!loc) return reject(new Error("Drive gave no upload address"));
+      const xhr = new XMLHttpRequest(); xhr.open("PUT", loc, true); xhr.setRequestHeader("Content-Type", mime);
+      xhr.upload.onprogress = e=>{ if (e.lengthComputable) onProgress(e.loaded/e.total); };
+      xhr.onload = ()=>{ if (xhr.status>=200 && xhr.status<300){ try { resolve(JSON.parse(xhr.responseText)); } catch(e){ reject(new Error("Drive answer unreadable")); } } else reject(new Error("Drive upload failed ("+xhr.status+")")); };
+      xhr.onerror = ()=>reject(new Error("Network error during upload")); xhr.send(file);
+    } catch(e){ reject(e); }
+  });
+}
+
+async function go(){
+  if (busy) return; busy=true; updateReady(); $("log").innerHTML=""; setBar(0.02);
+  const cap=captionText(); const nets=activeNets(); const targets={}; for (const n of nets) (targets[n.group] ||= []).push(n.id);
+  const entry={ mode, caption:cap, at:new Date().toISOString(), status:"working" };
+  try {
+    let driveFileId=null, mediaUrl=null, filename=null;
+    if (blob){
+      const ext = blobMime.includes("webm")?"webm":blobMime.includes("png")?"png":blobMime.includes("jpeg")||blobMime.includes("jpg")?"jpg":blobMime.includes("quicktime")?"mov":"mp4";
+      const l1=logLine("", "Getting ready…");
+      const prep = await api("prepare", { mode, ext }); filename=prep.filename;
+      l1.textContent="Uploading "+prep.filename+" to Drive…";
+      const f = await uploadToDrive(prep, blob, blobMime, p=>{ setBar(0.05+p*0.6); l1.textContent="Uploading "+prep.filename+"… "+Math.round(p*100)+"%"; });
+      driveFileId=f.id; l1.className="ok"; l1.textContent="Saved to Drive as "+prep.filename+" ✓"; l1.append(" "); const a=document.createElement("a"); a.href="https://drive.google.com/file/d/"+f.id+"/view"; a.target="_blank"; a.rel="noopener"; a.textContent="Open"; l1.append(a);
+      entry.driveFileId=f.id; entry.filename=prep.filename;
+    } else { mediaUrl=epImage; }
+    setBar(0.7);
+    const l2=logLine("", "Sending to Metricool…");
+    const res = await api("post", { mode, caption:cap, link: mode==="practivist"?epLink():"", driveFileId, mediaUrl, targets });
+    l2.remove();
+    for (const r of res.results){ const d=logLine(r.ok?"ok":"bad", (r.ok?"✓ ":"✗ ")+r.tag+(r.ok?"":": "+r.error)); if (r.plannerUrl){ d.append(" "); const a=document.createElement("a"); a.href=r.plannerUrl; a.target="_blank"; a.rel="noopener"; a.textContent="View"; d.append(a);} }
+    setBar(1);
+    logLine(res.allOk?"ok":"", res.allOk ? "Done. Goes out at "+res.when.slice(11,16)+" Pacific." : "Some networks didn't go through — the file is safe in Drive; fix the error and tap again.");
+    entry.status = res.allOk ? "scheduled" : "partial";
+    if (res.allOk){ blob=null; $("playback").hidden=true; $("imgprev").hidden=true; $("stageempty").hidden=false; $("camBtn").hidden=false; $("redoBtn").hidden=true; $("timer").hidden=true; $("vidhint").textContent="Nothing recorded yet."; $("vidhint").className="hint"; if (mode!=="practivist") $("caption").value=""; }
+  } catch(e){ logLine("bad", e.message); entry.status="failed"; entry.error=e.message; setBar(0); }
+  const hist=ls.get("hist",[]); hist.unshift(entry); ls.set("hist", hist.slice(0,20)); renderHistory();
+  busy=false; updateReady();
+}
+function renderHistory(){
+  const hist=ls.get("hist",[]); const h=$("hist"); h.innerHTML=""; $("histnote").textContent = hist.length ? hist.length+" on this phone" : "No posts yet";
+  for (const d of hist.slice(0,10)){
+    const it=document.createElement("div"); it.className="item";
+    const w=document.createElement("div"); w.className="when"; w.textContent=(MODES[d.mode]?MODES[d.mode].label:d.mode)+" · "+new Date(d.at).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})+(d.filename?" · "+d.filename:"");
+    const c=document.createElement("div"); c.textContent=(d.caption||"").slice(0,140);
+    const s=document.createElement("div"); s.className="st "+(d.status==="scheduled"?"ok":d.status==="working"?"":"bad"); s.textContent={scheduled:"Scheduled ✓",partial:"Partly failed",failed:"Failed: "+(d.error||""),working:"…"}[d.status]||d.status;
+    it.append(w,c,s); h.append(it);
+  }
+}
+
+// ---- boot ----
+for (const [k,M] of Object.entries(MODES)){ const b=document.createElement("button"); b.type="button"; b.dataset.mode=k; const t=document.createElement("b"); t.textContent=M.label; const s=document.createElement("span"); s.textContent=M.sub; b.append(t,s); b.addEventListener("click",()=>setMode(k)); $("modes").append(b); }
+$("camBtn").addEventListener("click", startCamera);
+$("recBtn").addEventListener("click", ()=>{ if (recorder && recorder.state==="recording") stopRec(); else startRec(); });
+$("redoBtn").addEventListener("click", ()=>{ blob=null; $("playback").hidden=true; $("redoBtn").hidden=true; $("vidhint").textContent="Nothing recorded yet."; $("vidhint").className="hint"; updateReady(); startCamera(); });
+$("fileIn").addEventListener("change", e=>usePickedFile(e.target.files[0]));
+$("caption").addEventListener("input", ()=>{ ls.set("autocap", false); updateReady(); });
+$("eplink").addEventListener("input", updateReady);
+$("refreshEp").addEventListener("click", ()=>{ ls.set("autocap", true); loadEpisode(); });
+$("goBtn").addEventListener("click", go);
+$("gear").addEventListener("click", ()=>{ $("setupcard").hidden=!$("setupcard").hidden; $("appkey").value=appKey; });
+$("savekey").addEventListener("click", ()=>{ appKey=$("appkey").value.trim(); ls.set("appkey", appKey); $("keyhint").textContent="Saved"; updateReady(); });
+const urlKey = new URLSearchParams(location.search).get("key"); if (urlKey){ appKey=urlKey; ls.set("appkey", appKey); history.replaceState(null,"",location.pathname); }
+if (!appKey) $("setupcard").hidden=false;
+renderHistory();
+setMode(MODES[ls.get("mode","dailyjason")] ? ls.get("mode","dailyjason") : "dailyjason");
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(()=>{});
+</script>
+</body>
+</html>
