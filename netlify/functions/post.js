@@ -1,5 +1,5 @@
 // Schedules the post(s) in Metricool via its MCP door. One call per brand; Bluesky gets a shortened copy if needed.
-const { connect, reply, preflight, checkAppKey, mcpCall } = require('./_lib');
+const { connect, reply, preflight, checkAppKey, mcpCall, googleAccessToken } = require('./_lib');
 
 const TZ = 'America/Los_Angeles';
 const BRANDS = { ft6: process.env.FT6_BLOG_ID || '7471146', personal: process.env.PERSONAL_BLOG_ID || '7506191' };
@@ -38,7 +38,16 @@ exports.handler = async function (event) {
   if ((!driveFileId && !b.mediaUrl) || !caption || !targets) return reply(400, { error: 'Missing media, caption or targets' });
   const isVideo = mode !== 'practivist';
   const label = mode === 'dailyjason' ? 'Daily Jason' : mode === 'practivist' ? 'Practivist' : 'Personal';
-  const mediaUrl = driveFileId ? 'https://drive.google.com/file/d/' + driveFileId + '/view' : String(b.mediaUrl);
+  let mediaUrl = String(b.mediaUrl || '');
+  if (driveFileId) {
+    // Jason approved: make just this video viewable by link so Metricool can download it, then give a direct download URL.
+    try {
+      const token = await googleAccessToken();
+      const pr = await fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(driveFileId) + '/permissions', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'reader', type: 'anyone' }) });
+      if (!pr.ok) return reply(500, { error: 'Could not share the video for posting: ' + (await pr.text()).slice(0, 300) });
+    } catch (e) { return reply(500, { error: 'Could not share the video for posting: ' + e.message }); }
+    mediaUrl = 'https://drive.usercontent.google.com/download?id=' + encodeURIComponent(driveFileId) + '&export=download&confirm=t';
+  }
   const when = laDate(1);
   const fullText = (mode === 'practivist' && link) ? caption + '\n\n' + link : caption;
   const results = [];
