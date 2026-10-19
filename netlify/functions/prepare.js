@@ -1,6 +1,6 @@
 // Called before an upload. Returns a short-lived Google token (the phone uploads straight to Drive),
 // the right folder for this mode, and the next file name like 2026_10_18_1_DailyJason.mp4.
-const { reply, preflight, checkAppKey, googleAccessToken, driveList, driveFindFolder, driveEnsureFolder } = require('./_lib');
+const { connect, reply, preflight, checkAppKey, googleAccessToken, driveList, driveFindFolder, driveEnsureFolder } = require('./_lib');
 
 const TZ = 'America/Los_Angeles';
 const DAILY_JASON_FOLDER_ID = process.env.DAILY_JASON_FOLDER_ID || '1jOFUHGQAaUf_YC2-N-YYBlFjdzskebvN';
@@ -16,6 +16,7 @@ function dayKey() {
 }
 
 exports.handler = async function (event) {
+  connect(event);
   const pf = preflight(event); if (pf) return pf;
   if (!checkAppKey(event)) return reply(403, { error: 'Not allowed' });
   let body = {};
