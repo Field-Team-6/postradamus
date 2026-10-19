@@ -1,0 +1,24 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+
+[[redirects]]
+  from = "/icon-180.png"
+  to = "/.netlify/functions/icon?s=180"
+  status = 200
+[[redirects]]
+  from = "/icon-192.png"
+  to = "/.netlify/functions/icon?s=192"
+  status = 200
+[[redirects]]
+  from = "/icon-512.png"
+  to = "/.netlify/functions/icon?s=512"
+  status = 200
