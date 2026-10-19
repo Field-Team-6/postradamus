@@ -1,5 +1,5 @@
 // Schedules the post(s) in Metricool via its MCP door. One call per brand; Bluesky gets a shortened copy if needed.
-const { reply, preflight, checkAppKey, mcpCall } = require('./_lib');
+const { connect, reply, preflight, checkAppKey, mcpCall } = require('./_lib');
 
 const TZ = 'America/Los_Angeles';
 const BRANDS = { ft6: process.env.FT6_BLOG_ID || '7471146', personal: process.env.PERSONAL_BLOG_ID || '7506191' };
@@ -29,6 +29,7 @@ function buildInfo(nets, text, mediaUrl, when, cap, isVideo, label) {
 }
 
 exports.handler = async function (event) {
+  connect(event);
   const pf = preflight(event); if (pf) return pf;
   if (!checkAppKey(event)) return reply(403, { error: 'Not allowed' });
   let b = {};
