@@ -1,10 +1,11 @@
 // One-time Google approval. Open /.netlify/functions/google-auth?key=APP_KEY in a browser while signed in as
 // jason.berlin@gmail.com and approve Drive access. The approval is saved in Netlify Blobs automatically.
 const crypto = require('crypto');
-const { reply, store, siteUrl, checkAppKey } = require('./_lib');
+const { connect, reply, store, siteUrl, checkAppKey } = require('./_lib');
 const TEXT = { 'Content-Type': 'text/plain' };
 
 exports.handler = async function (event) {
+  connect(event);
   const clientId = process.env.GOOGLE_CLIENT_ID, secret = process.env.GOOGLE_CLIENT_SECRET;
   if (!clientId || !secret) return reply(500, 'GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are not set in Netlify yet.', TEXT);
   const s = store();
