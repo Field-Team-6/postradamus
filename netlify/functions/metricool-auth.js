@@ -1,11 +1,12 @@
 // One-time Metricool approval through Metricool's MCP door (OAuth with dynamic registration + PKCE).
 // Open /.netlify/functions/metricool-auth?key=APP_KEY once, click Allow on Metricool, done. Tokens are kept in Netlify Blobs.
 const crypto = require('crypto');
-const { reply, store, siteUrl, mcpMeta, checkAppKey } = require('./_lib');
+const { connect, reply, store, siteUrl, mcpMeta, checkAppKey } = require('./_lib');
 
 function b64url(buf) { return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
 
 exports.handler = async function (event) {
+  connect(event);
   const s = store();
   const redirect = siteUrl(event) + '/.netlify/functions/metricool-auth';
   const q = event.queryStringParameters || {};
