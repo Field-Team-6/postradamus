@@ -32,6 +32,7 @@ body.personal .top{background:var(--personal);color:#fff}
 .top .brand{font-size:13px;font-weight:600;opacity:.9}
 .top button{background:transparent;border:1px solid rgba(255,255,255,.5);color:inherit;padding:4px 10px;font-size:13px;border-radius:999px}
 main{max-width:560px;margin:0 auto;display:grid;gap:16px;padding-top:16px}
+[hidden]{display:none!important}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:10px;min-width:0}
 .card h2{font-family:var(--display);font-weight:700;font-size:22px;margin:0;letter-spacing:.01em}
 .card h2 small{font-family:var(--body);font-weight:500;font-size:13px;color:var(--muted);margin-left:8px}
@@ -49,6 +50,9 @@ body.personal .modes button.on{outline-color:var(--personal)}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 button{font:inherit;font-weight:600;font-size:16px;padding:12px 18px;border-radius:10px;cursor:pointer;color:var(--fg);background:var(--field);border:1px solid var(--line)}
 button:disabled{opacity:.5;cursor:default}
+label.recbig{display:flex;align-items:center;justify-content:center;gap:10px;flex:1;min-height:64px;border-radius:12px;background:var(--rec);color:#fff;font-family:var(--display);font-size:24px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;position:relative}
+label.recbig::before{content:"";width:14px;height:14px;border-radius:50%;background:#fff}
+label.recbig input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
 button.rec{background:var(--rec);color:#fff;border-color:transparent;flex:1;font-family:var(--display);font-size:22px;letter-spacing:.03em;text-transform:uppercase}
 button.go{background:var(--accent);color:var(--accent-fg);border-color:transparent;width:100%;font-family:var(--display);font-size:26px;letter-spacing:.03em;text-transform:uppercase;padding:16px}
 body.personal button.go{background:var(--personal);color:#fff}
@@ -84,11 +88,11 @@ textarea{min-height:120px;resize:vertical}
 
 <main>
   <section class="card setup" id="setupcard" hidden>
-    <h2>Setup</h2>
-    <div class="hint">Paste the app key Claude gave you. It stays on this phone.</div>
+    <h2>Unlock Postradamus</h2>
+    <div class="hint">Paste your app key once. This phone remembers it.</div>
     <input type="text" id="appkey" placeholder="App key" autocomplete="off">
     <div class="row"><button type="button" id="savekey">Save</button><span class="hint" id="keyhint"></span></div>
-    <div class="hint">One-time approvals (do these from a computer, once): <a id="gauth" href="/.netlify/functions/google-auth" target="_blank">Google Drive</a> · <a id="mauth" href="/.netlify/functions/metricool-auth" target="_blank">Metricool</a></div>
+    <div class="hint" id="approvals" hidden>Reconnect if posting ever stops working: <a id="gauth" href="/.netlify/functions/google-auth" target="_blank">Google Drive</a> · <a id="mauth" href="/.netlify/functions/metricool-auth" target="_blank">Metricool</a></div>
   </section>
 
   <section class="card">
@@ -98,18 +102,17 @@ textarea{min-height:120px;resize:vertical}
 
   <section class="card" id="mediacard">
     <h2 id="mediahead">1. Record <small>up to 90 seconds</small></h2>
-    <div class="stage">
-      <video id="preview" playsinline muted autoplay hidden></video>
+    <div class="row" id="camrow">
+      <label class="rec recbig" id="recLabel"><span id="recLabelText">Start Recording</span><input type="file" id="camIn" accept="video/*" capture="user"></label>
+    </div>
+    <div class="stage" id="stage" hidden>
+      <video id="preview" playsinline muted hidden></video>
       <video id="playback" playsinline controls hidden></video>
       <img id="imgprev" alt="" hidden>
-      <div class="empty" id="stageempty">Tap <b>&nbsp;Start camera&nbsp;</b> to see yourself here.</div>
+      <div class="empty" id="stageempty" hidden></div>
       <div class="timer" id="timer" hidden>0:00</div>
     </div>
-    <div class="row" id="camrow">
-      <button type="button" id="camBtn">Start camera</button>
-      <button type="button" class="rec" id="recBtn" hidden>Record</button>
-      <button type="button" id="redoBtn" hidden>Record again</button>
-    </div>
+    <div class="row" hidden><button type="button" id="camBtn">Start camera</button><button type="button" class="rec" id="recBtn">Record</button><button type="button" id="redoBtn">Record again</button></div>
     <div class="row">
       <label class="file" id="filelabel"><span id="filelabeltext">Use a video already on my phone</span><input type="file" id="fileIn" accept="video/*"></label>
       <span class="hint" id="vidhint">Nothing recorded yet.</span>
@@ -190,7 +193,7 @@ function setMode(m){
   const video = M.media==="video";
   $("mediacard").hidden = !video; $("linkcard").hidden = video;
   if (!video) stopCamera();
-  blob=null; epImage=""; $("playback").hidden=true; $("imgprev").hidden=true; $("stageempty").hidden=false; $("camBtn").hidden=false; $("recBtn").hidden=true; $("redoBtn").hidden=true; $("timer").hidden=true;
+  blob=null; epImage=""; $("playback").hidden=true; $("imgprev").hidden=true; $("stage").hidden=true; $("camrow").hidden=false; $("recLabelText").textContent="Start Recording"; $("timer").hidden=true;
   $("vidhint").textContent="Nothing recorded yet."; $("vidhint").className="hint";
   $("caption").placeholder = m==="practivist" ? "New Practivist pod is out! …" : m==="personal" ? "Caption for your personal accounts." : "What's today's Daily Jason about?";
   ls.set("mode", m);
@@ -261,15 +264,14 @@ function finishRec(){
   $("recBtn").hidden=true; $("recBtn").textContent="Record"; $("redoBtn").hidden=false; $("timer").classList.remove("live"); $("timer").textContent=fmt(durationSec);
   $("vidhint").textContent=fmt(durationSec)+" · "+(blob.size/1048576).toFixed(1)+" MB · ready"; $("vidhint").className="hint ok"; updateReady();
 }
-function showPlayback(){ const p=$("playback"); if (p.src) URL.revokeObjectURL(p.src); p.src=URL.createObjectURL(blob); p.hidden=false; $("preview").hidden=true; $("imgprev").hidden=true; $("stageempty").hidden=true; }
+function showPlayback(){ $("stage").hidden=false; $("recLabelText").textContent="Record again"; const p=$("playback"); if (p.src) URL.revokeObjectURL(p.src); p.src=URL.createObjectURL(blob); p.hidden=false; $("preview").hidden=true; $("imgprev").hidden=true; $("stageempty").hidden=true; }
 async function usePickedFile(file){
   if (!file) return;
   if (MODES[mode].media==="image"){
     blob=file; blobMime=file.type||"image/jpeg"; epImage="";
-    $("mediacard").hidden=false; $("camrow").hidden=true; const i=$("imgprev"); i.src=URL.createObjectURL(file); i.hidden=false; $("stageempty").hidden=true; $("playback").hidden=true;
+    $("mediacard").hidden=false; $("camrow").hidden=true; $("stage").hidden=false; const i=$("imgprev"); i.src=URL.createObjectURL(file); i.hidden=false; $("stageempty").hidden=true; $("playback").hidden=true;
     $("vidhint").textContent="Cover image chosen"; $("vidhint").className="hint ok"; updateReady(); return;
   }
-  stopCamera(); $("camBtn").hidden=false; $("recBtn").hidden=true; $("redoBtn").hidden=true;
   blob=file; blobMime=file.type||"video/mp4"; durationSec=0; showPlayback();
   const p=$("playback"); await new Promise(r=>{ p.onloadedmetadata=()=>r(); setTimeout(r,3000); });
   durationSec = isFinite(p.duration) ? p.duration : 0;
@@ -317,7 +319,7 @@ async function go(){
     setBar(1);
     logLine(res.allOk?"ok":"", res.allOk ? "Done. Goes out at "+res.when.slice(11,16)+" Pacific." : "Some networks didn't go through — the file is safe in Drive; fix the error and tap again.");
     entry.status = res.allOk ? "scheduled" : "partial";
-    if (res.allOk){ blob=null; $("playback").hidden=true; $("imgprev").hidden=true; $("stageempty").hidden=false; $("camBtn").hidden=false; $("redoBtn").hidden=true; $("timer").hidden=true; $("vidhint").textContent="Nothing recorded yet."; $("vidhint").className="hint"; if (mode!=="practivist") $("caption").value=""; }
+    if (res.allOk){ blob=null; $("playback").hidden=true; $("imgprev").hidden=true; $("stage").hidden=true; $("recLabelText").textContent="Start Recording"; $("timer").hidden=true; $("vidhint").textContent="Nothing recorded yet."; $("vidhint").className="hint"; if (mode!=="practivist") $("caption").value=""; }
   } catch(e){ logLine("bad", e.message); entry.status="failed"; entry.error=e.message; setBar(0); }
   const hist=ls.get("hist",[]); hist.unshift(entry); ls.set("hist", hist.slice(0,20)); renderHistory();
   busy=false; updateReady();
@@ -338,13 +340,14 @@ for (const [k,M] of Object.entries(MODES)){ const b=document.createElement("butt
 $("camBtn").addEventListener("click", startCamera);
 $("recBtn").addEventListener("click", ()=>{ if (recorder && recorder.state==="recording") stopRec(); else startRec(); });
 $("redoBtn").addEventListener("click", ()=>{ blob=null; $("playback").hidden=true; $("redoBtn").hidden=true; $("vidhint").textContent="Nothing recorded yet."; $("vidhint").className="hint"; updateReady(); startCamera(); });
-$("fileIn").addEventListener("change", e=>usePickedFile(e.target.files[0]));
+$("fileIn").addEventListener("change", e=>{ usePickedFile(e.target.files[0]); e.target.value=""; });
+$("camIn").addEventListener("change", e=>{ usePickedFile(e.target.files[0]); e.target.value=""; });
 $("caption").addEventListener("input", ()=>{ ls.set("autocap", false); updateReady(); });
 $("eplink").addEventListener("input", updateReady);
 $("refreshEp").addEventListener("click", ()=>{ ls.set("autocap", true); loadEpisode(); });
 $("goBtn").addEventListener("click", go);
-$("gear").addEventListener("click", ()=>{ $("setupcard").hidden=!$("setupcard").hidden; $("appkey").value=appKey; });
-$("savekey").addEventListener("click", ()=>{ appKey=$("appkey").value.trim(); ls.set("appkey", appKey); $("keyhint").textContent="Saved"; updateReady(); });
+$("gear").addEventListener("click", ()=>{ const c=$("setupcard"); c.hidden=!c.hidden; $("approvals").hidden=false; $("appkey").value=appKey; });
+$("savekey").addEventListener("click", ()=>{ appKey=$("appkey").value.trim(); ls.set("appkey", appKey); $("keyhint").textContent="Saved"; updateReady(); if (appKey) setTimeout(()=>{ $("setupcard").hidden=true; $("keyhint").textContent=""; },700); });
 const urlKey = new URLSearchParams(location.search).get("key"); if (urlKey){ appKey=urlKey; ls.set("appkey", appKey); history.replaceState(null,"",location.pathname); }
 function authLinks(){ for (const id of ["gauth","mauth"]) { const a=$(id); if(a) a.href=a.href.split("?")[0]+"?key="+encodeURIComponent(appKey); } }
 authLinks(); $("savekey").addEventListener("click", authLinks);
