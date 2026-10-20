@@ -33,7 +33,8 @@ function cropResize(img, size) {
 }
 
 exports.handler = async function (event) {
-  const s = parseInt((event.queryStringParameters || {}).s, 10);
+  const m = String(event.rawUrl || event.path || '').match(/icon-(\d+)/);
+  const s = parseInt((event.queryStringParameters || {}).s || (m && m[1]), 10);
   const size = [180, 192, 512].includes(s) ? s : 192;
   try {
     if (!cache[size]) cache[size] = cropResize(await loadSource(event), size);
