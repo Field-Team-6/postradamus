@@ -60,7 +60,7 @@ body.personal button.go{background:var(--personal);color:#fff}
 label.file{display:inline-block;font-weight:600;padding:12px 18px;border-radius:10px;background:var(--field);border:1px solid var(--line);cursor:pointer}
 label.file input{position:absolute;width:1px;height:1px;opacity:0}
 textarea,input[type=url],input[type=text]{width:100%;font:inherit;font-size:16px;line-height:1.45;color:var(--fg);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:12px}
-textarea{min-height:120px;resize:vertical}
+textarea{min-height:120px;resize:vertical;overflow:hidden}
 .count{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
 .count.warn{color:var(--warn)}
 .nets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
@@ -213,7 +213,9 @@ async function loadEpisode(){
   } catch(e){ $("epstate").textContent="couldn't load"; $("ephint").textContent=e.message; $("ephint").className="hint bad"; }
   updateReady();
 }
+function fitCaption(){ const c=$("caption"); if(!c) return; c.style.height="auto"; c.style.height=Math.max(120, c.scrollHeight+2)+"px"; }
 function updateReady(){
+  fitCaption();
   const cap=captionText(); const full = (mode==="practivist" && epLink()) ? cap+"\n\n"+epLink() : cap; const n=[...full].length;
   $("capcount").textContent = [...cap].length + " characters" + (mode==="practivist" && epLink() ? " (+ link)" : "");
   const bsOn = activeNets().some(x=>x.id==="bluesky");
