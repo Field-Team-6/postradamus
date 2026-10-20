@@ -167,11 +167,11 @@ const NETWORKS = [
   { id:"instagram", name:"Instagram", group:"personal" }, { id:"threads", name:"Threads", group:"personal" }, { id:"bluesky", name:"Bluesky", group:"personal" }, { id:"youtube", name:"YouTube (Short)", group:"personal", videoOnly:true },
 ];
 const GROUPS = { ft6:"Field Team 6", personal:"Jason personal" };
-const DEFAULT_ON = { "ft6:facebook":true, "ft6:instagram":true, "ft6:threads":true, "ft6:bluesky":true, "ft6:tiktok":false, "ft6:youtube":true, "personal:instagram":true, "personal:threads":true, "personal:bluesky":true, "personal:youtube":true };
+const DEFAULT_ON = { "ft6:facebook":true, "ft6:instagram":true, "ft6:threads":true, "ft6:bluesky":true, "ft6:tiktok":true, "ft6:youtube":true, "personal:instagram":true, "personal:threads":true, "personal:bluesky":true, "personal:youtube":true };
 
 const $ = id => document.getElementById(id);
 const ls = { get(k,d){ try{ const v=localStorage.getItem(k); return v===null?d:JSON.parse(v);}catch(e){return d;} }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} } };
-let mode="dailyjason", enabled = { ...DEFAULT_ON, ...ls.get("nets",{}) }, appKey = ls.get("appkey",""); if (!ls.get("yt_on_v1", false)) { enabled["ft6:youtube"] = true; ls.set("nets", enabled); ls.set("yt_on_v1", true); } // one-time: YouTube joined FT6 networks 2026-10-19
+let mode="dailyjason", enabled = { ...DEFAULT_ON, ...ls.get("nets2",{}) }, appKey = ls.get("appkey",""); if (!ls.get("yt_on_v1", false)) { enabled["ft6:youtube"] = true; ls.set("nets2", enabled); ls.set("yt_on_v1", true); } // one-time: YouTube joined FT6 networks 2026-10-19
 if (!ls.get("yt_on_v2", false)) { enabled["personal:youtube"] = true; ls.set("nets", enabled); ls.set("yt_on_v2", true); } // one-time: personal YouTube (@jasonberlin) added 2026-10-19
 // Image-only modes (Practivist) can't go to YouTube, so video-only networks drop out there.
 function usableNet(n){ return !(n.videoOnly && MODES[mode].media!=="video"); }
