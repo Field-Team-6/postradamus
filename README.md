@@ -10,3 +10,5 @@ One tap: record a video (or pick the latest Practivist episode), caption it, pos
 
 Netlify environment variables: `APP_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN`,
 optional `DAILY_JASON_FOLDER_ID`, `NON_FT6_FOLDER_NAME`, `FT6_BLOG_ID`, `PERSONAL_BLOG_ID`, `PRACTIVIST_FEED`.
+
+Networks note: YouTube Shorts (FT6 channel @fieldteam6524) added to Daily Jason on 2026-10-19.
