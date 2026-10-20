@@ -1,5 +1,6 @@
 [build]
   publish = "."
+  command = "node make-icons.js"
   functions = "netlify/functions"
 
 [functions]
