@@ -42,6 +42,6 @@ exports.handler = async function (event) {
     if (!img) img = (xml.match(/<image>[\s\S]*?<url>([^<]+)<\/url>/i) || [])[1] || '';
     const pubDate = unCdata(pick(item, 'pubDate'));
     const caption = 'New Practivist pod is out! ' + title + (firstPara ? '\n\n' + firstPara : '');
-    return reply(200, { title, link, description: firstPara, image: decode(img), pubDate, caption }, { 'Cache-Control': 'public, max-age=300' });
+    return reply(200, { title, link, description: firstPara, image: decode(img).replace('w_1200,h_600,', 'w_1200,h_630,'), pubDate, caption }, { 'Cache-Control': 'public, max-age=300' });
   } catch (e) { return reply(500, { error: e.message }); }
 };
