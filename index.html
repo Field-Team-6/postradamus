@@ -225,7 +225,7 @@ function updateReady(){
   $("capcount").classList.toggle("warn", bsOn && n > BLUESKY_LIMIT);
   $("caphint").textContent = bsOn && n > BLUESKY_LIMIT ? "Over 300: Bluesky gets a shortened copy." : "";
   const nets=activeNets(); let why="";
-  if (!appKey) why = "Add the app key in ⚙︎ Settings first.";
+  if (!appKey && !unlocked) why = "Add the app key in ⚙︎ Settings first.";
   else if (MODES[mode].media==="video" && !blob) why = "Record a video first.";
   else if (mode==="practivist" && !/^https?:\/\//.test(epLink())) why = "Need the episode link.";
   else if (mode==="practivist" && !epImage && !blob) why = "No cover image found — choose one below.";
@@ -367,11 +367,16 @@ $("fbBtn").addEventListener("click", ()=>{
   else window.open("https://www.facebook.com/", "_blank");
 });
 $("gear").addEventListener("click", ()=>{ const c=$("setupcard"); c.hidden=!c.hidden; $("approvals").hidden=false; $("appkey").value=appKey; });
-$("savekey").addEventListener("click", ()=>{ appKey=$("appkey").value.trim(); ls.set("appkey", appKey); $("keyhint").textContent="Saved"; updateReady(); if (appKey) setTimeout(()=>{ $("setupcard").hidden=true; $("keyhint").textContent=""; },700); });
+// "Remember me": the server sets a year-long cookie on this phone, so a wiped local storage doesn't lock the app again.
+let unlocked = false;
+async function remember(){ try { const j = await api("unlock", {}); unlocked = !!j.ok; } catch(e) { unlocked = false; } updateReady(); return unlocked; }
+$("savekey").addEventListener("click", async ()=>{ appKey=$("appkey").value.trim(); ls.set("appkey", appKey); $("keyhint").textContent="Checking…"; updateReady();
+  if (!appKey) return; const ok = await remember(); $("keyhint").textContent = ok ? "Saved" : "That key didn't work — check it and try again."; if (ok) setTimeout(()=>{ $("setupcard").hidden=true; $("keyhint").textContent=""; },700); });
 const urlKey = new URLSearchParams(location.search).get("key"); if (urlKey){ appKey=urlKey; ls.set("appkey", appKey); history.replaceState(null,"",location.pathname); }
 function authLinks(){ for (const id of ["gauth","mauth"]) { const a=$(id); if(a) a.href=a.href.split("?")[0]+"?key="+encodeURIComponent(appKey); } }
 authLinks(); $("savekey").addEventListener("click", authLinks);
-if (!appKey) $("setupcard").hidden=false;
+// Unlock check on every open: with a key, refresh the cookie; without one, see if the cookie still has us unlocked.
+if (appKey) remember(); else remember().then(ok => { if (!ok) $("setupcard").hidden=false; });
 renderHistory();
 setMode(MODES[ls.get("mode","dailyjason")] ? ls.get("mode","dailyjason") : "dailyjason");
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(()=>{});

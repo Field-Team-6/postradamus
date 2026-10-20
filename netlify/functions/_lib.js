@@ -17,11 +17,23 @@ function preflight(event) {
   return null;
 }
 // A simple shared secret so only Jason's installed app can call the posting functions.
+// The key can arrive as a header, a ?key= link, or the long-lived "remember me" cookie the unlock function hands out
+// (iPhones wipe a web app's local storage now and then, but keep a server-set cookie like this one).
+const KEY_COOKIE = 'pk';
+function cookieKey(event) {
+  const raw = event.headers.cookie || event.headers.Cookie || '';
+  const m = raw.split(/;\s*/).map(p => p.split('=')).find(p => p[0] === KEY_COOKIE);
+  return m ? decodeURIComponent(m.slice(1).join('=')) : '';
+}
 function checkAppKey(event) {
   const want = process.env.APP_KEY;
   if (!want) return false; // locked until APP_KEY is set
-  const got = (event.headers['x-app-key'] || event.headers['X-App-Key'] || (event.queryStringParameters || {}).key || '');
+  const got = (event.headers['x-app-key'] || event.headers['X-App-Key'] || (event.queryStringParameters || {}).key || cookieKey(event) || '');
   return got === want;
+}
+// Response header that remembers the key on this device for a year.
+function rememberKeyHeader() {
+  return { 'Set-Cookie': KEY_COOKIE + '=' + encodeURIComponent(process.env.APP_KEY) + '; Path=/; Max-Age=31536000; Secure; HttpOnly; SameSite=Lax' };
 }
 function store() { return getStore('postradamus'); }
 function siteUrl(event) {
@@ -125,4 +137,4 @@ async function mcpCall(toolName, args) {
   return payload;
 }
 
-module.exports = { connect, reply, preflight, checkAppKey, store, siteUrl, googleAccessToken, driveList, driveFindFolder, driveEnsureFolder, mcpMeta, metricoolTokens, mcpCall, MCP_URL };
+module.exports = { connect, reply, preflight, checkAppKey, rememberKeyHeader, store, siteUrl, googleAccessToken, driveList, driveFindFolder, driveEnsureFolder, mcpMeta, metricoolTokens, mcpCall, MCP_URL };
