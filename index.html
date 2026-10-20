@@ -208,7 +208,7 @@ async function loadEpisode(){
   try {
     const ep = await api("practivist-latest");
     $("eplink").value = ep.link || ""; epImage = ep.image || "";
-    if (!captionText() || ls.get("autocap",true)) { $("caption").value = ep.caption || ""; }
+    $("caption").value = ep.caption || "";
     $("epstate").textContent = ep.title ? ep.title : "found"; $("ephint").textContent = ep.pubDate ? "Published "+new Date(ep.pubDate).toLocaleDateString("en-US",{month:"short",day:"numeric"}) + (epImage ? " · cover image attached" : " · no cover image found") : "";
   } catch(e){ $("epstate").textContent="couldn't load"; $("ephint").textContent=e.message; $("ephint").className="hint bad"; }
   updateReady();
