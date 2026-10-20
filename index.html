@@ -164,14 +164,17 @@ const MODES = {
 const NETWORKS = [
   { id:"facebook", name:"Facebook (Reel)", group:"ft6" }, { id:"instagram", name:"Instagram (Reel)", group:"ft6" }, { id:"threads", name:"Threads", group:"ft6" },
   { id:"bluesky", name:"Bluesky", group:"ft6" }, { id:"tiktok", name:"TikTok", group:"ft6" }, { id:"youtube", name:"YouTube (Short)", group:"ft6" },
-  { id:"instagram", name:"Instagram", group:"personal" }, { id:"threads", name:"Threads", group:"personal" }, { id:"bluesky", name:"Bluesky", group:"personal" },
+  { id:"instagram", name:"Instagram", group:"personal" }, { id:"threads", name:"Threads", group:"personal" }, { id:"bluesky", name:"Bluesky", group:"personal" }, { id:"youtube", name:"YouTube (Short)", group:"personal", videoOnly:true },
 ];
 const GROUPS = { ft6:"Field Team 6", personal:"Jason personal" };
-const DEFAULT_ON = { "ft6:facebook":true, "ft6:instagram":true, "ft6:threads":true, "ft6:bluesky":true, "ft6:tiktok":false, "ft6:youtube":true, "personal:instagram":true, "personal:threads":true, "personal:bluesky":true };
+const DEFAULT_ON = { "ft6:facebook":true, "ft6:instagram":true, "ft6:threads":true, "ft6:bluesky":true, "ft6:tiktok":false, "ft6:youtube":true, "personal:instagram":true, "personal:threads":true, "personal:bluesky":true, "personal:youtube":true };
 
 const $ = id => document.getElementById(id);
 const ls = { get(k,d){ try{ const v=localStorage.getItem(k); return v===null?d:JSON.parse(v);}catch(e){return d;} }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} } };
 let mode="dailyjason", enabled = { ...DEFAULT_ON, ...ls.get("nets",{}) }, appKey = ls.get("appkey",""); if (!ls.get("yt_on_v1", false)) { enabled["ft6:youtube"] = true; ls.set("nets", enabled); ls.set("yt_on_v1", true); } // one-time: YouTube joined FT6 networks 2026-10-19
+if (!ls.get("yt_on_v2", false)) { enabled["personal:youtube"] = true; ls.set("nets", enabled); ls.set("yt_on_v2", true); } // one-time: personal YouTube (@jasonberlin) added 2026-10-19
+// Image-only modes (Practivist) can't go to YouTube, so video-only networks drop out there.
+function usableNet(n){ return !(n.videoOnly && MODES[mode].media!=="video"); }
 let lastShare=null, stream=null, recorder=null, chunks=[], recStart=0, recTick=null, blob=null, blobMime="video/mp4", durationSec=0, busy=false, epImage="";
 
 function fmt(s){ s=Math.max(0,Math.round(s)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
@@ -180,7 +183,7 @@ function setBar(p){ $("bar").hidden=false; $("barfill").style.width=Math.round(p
 function captionText(){ return $("caption").value.trim(); }
 function epLink(){ return $("eplink").value.trim(); }
 function activeGroups(){ return MODES[mode].brand==="ft6" ? ["ft6","personal"] : ["personal"]; }
-function activeNets(){ return NETWORKS.filter(n => activeGroups().includes(n.group) && enabled[n.group+":"+n.id]); }
+function activeNets(){ return NETWORKS.filter(n => activeGroups().includes(n.group) && usableNet(n) && enabled[n.group+":"+n.id]); }
 async function api(name, body){
   const r = await fetch(FN+name, { method: body?"POST":"GET", headers: { "Content-Type":"application/json", "X-App-Key": appKey }, body: body?JSON.stringify(body):undefined });
   const j = await r.json().catch(()=>({ error:"Server gave a non-JSON answer ("+r.status+")" }));
@@ -236,7 +239,7 @@ function renderNets(){
   const wrap=$("nets"); wrap.innerHTML="";
   for (const g of activeGroups()){
     const h=document.createElement("div"); h.className="grp"; h.textContent=GROUPS[g]; wrap.append(h);
-    for (const n of NETWORKS.filter(x=>x.group===g)){
+    for (const n of NETWORKS.filter(x=>x.group===g && usableNet(x))){
       const key=g+":"+n.id; const l=document.createElement("label"); l.className = enabled[key]?"":"off";
       const c=document.createElement("input"); c.type="checkbox"; c.checked=!!enabled[key];
       c.addEventListener("change", ()=>{ enabled[key]=c.checked; l.className=c.checked?"":"off"; ls.set("nets", enabled); updateReady(); });
