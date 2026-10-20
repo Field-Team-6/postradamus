@@ -4,6 +4,8 @@
   "private": true,
   "description": "One-tap video posting for Field Team 6 and Jason's personal channels",
   "dependencies": {
-    "@netlify/blobs": "^8.1.0"
+    "@netlify/blobs": "^8.1.0",
+    "jpeg-js": "^0.4.4",
+    "pngjs": "^7.0.0"
   }
 }
