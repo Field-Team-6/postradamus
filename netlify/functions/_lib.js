@@ -35,7 +35,8 @@ function checkAppKey(event) {
 function rememberKeyHeader() {
   return { 'Set-Cookie': KEY_COOKIE + '=' + encodeURIComponent(process.env.APP_KEY) + '; Path=/; Max-Age=31536000; Secure; HttpOnly; SameSite=Lax' };
 }
-function store() { return getStore('postradamus'); }
+// 'strong' = always read the newest saved copy (the default can hand back a copy up to ~60s old).
+function store() { return getStore({ name: 'postradamus', consistency: 'strong' }); }
 function siteUrl(event) {
   return process.env.URL || ('https://' + event.headers.host);
 }
@@ -90,7 +91,16 @@ async function mcpMeta() {
   const r = await fetch('https://ai.metricool.com/.well-known/oauth-authorization-server');
   return r.json();
 }
+// Remember the Metricool login for the rest of this request, and only ever refresh once at a time,
+// so one post to two brands can't try to reuse a one-time refresh key.
+let metricoolMem = null, metricoolRefreshing = null;
 async function metricoolTokens() {
+  if (metricoolMem && metricoolMem.expires_at && Date.now() < metricoolMem.expires_at - 60000) return metricoolMem;
+  if (metricoolRefreshing) return metricoolRefreshing;
+  metricoolRefreshing = metricoolTokensFresh().then(t => (metricoolMem = t)).finally(() => { metricoolRefreshing = null; });
+  return metricoolRefreshing;
+}
+async function metricoolTokensFresh() {
   const s = store();
   const saved = await s.get('metricool', { type: 'json' });
   if (!saved || !saved.refresh_token) throw new Error('Metricool is not connected yet. Open /.netlify/functions/metricool-auth once.');
