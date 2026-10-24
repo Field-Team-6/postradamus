@@ -1,9 +1,10 @@
-// Schedules the post(s) in Metricool via its MCP door. One call per brand; Bluesky gets a shortened copy if needed.
+// Schedules the post(s) in Metricool via its MCP door. One call per brand; Bluesky and Threads get a shortened copy if needed.
 const { connect, reply, preflight, checkAppKey, mcpCall, googleAccessToken } = require('./_lib');
 
 const TZ = 'America/Los_Angeles';
 const BRANDS = { ft6: process.env.FT6_BLOG_ID || '7471146', personal: process.env.PERSONAL_BLOG_ID || '7506191' };
 const BLUESKY_LIMIT = 300;
+const THREADS_LIMIT = 500;
 
 function laDate(minutesAhead) {
   const t = new Date(Date.now() + minutesAhead * 60000);
@@ -54,13 +55,16 @@ exports.handler = async function (event) {
   for (const group of Object.keys(targets)) {
     const blogId = BRANDS[group]; const list = (targets[group] || []).filter(Boolean);
     if (!blogId || !list.length) continue;
-    const tooLong = [...fullText].length > BLUESKY_LIMIT;
-    const mainList = tooLong ? list.filter(x => x !== 'bluesky') : list;
+    // Networks with a caption length cap get their own shortened copy when the full text is too long.
+    const LIMITS = { bluesky: BLUESKY_LIMIT, threads: THREADS_LIMIT };
+    const fits = n => !LIMITS[n] || [...fullText].length <= LIMITS[n];
+    const mainList = list.filter(fits);
     const jobs = [];
     if (mainList.length) jobs.push({ nets: mainList, text: fullText, tag: group + ' · ' + mainList.join(', ') });
-    if (tooLong && list.includes('bluesky')) {
-      const bsText = (mode === 'practivist' && link) ? shortTo(caption, BLUESKY_LIMIT - link.length - 2) + '\n\n' + link : shortTo(caption, BLUESKY_LIMIT);
-      jobs.push({ nets: ['bluesky'], text: bsText, tag: group + ' · bluesky (shortened)' });
+    for (const n of list.filter(x => !fits(x))) {
+      const lim = LIMITS[n];
+      const shortText = (mode === 'practivist' && link) ? shortTo(caption, lim - [...link].length - 2) + '\n\n' + link : shortTo(caption, lim);
+      jobs.push({ nets: [n], text: shortText, tag: group + ' · ' + n + ' (shortened)' });
     }
     for (const j of jobs) {
       try {
