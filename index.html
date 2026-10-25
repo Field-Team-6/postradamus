@@ -80,6 +80,7 @@ textarea{min-height:120px;resize:vertical;overflow:hidden}
 .hist{display:grid;gap:8px}
 .hist .item{display:grid;gap:3px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px}
 .hist .when{color:var(--muted);font-size:13px}
+.hist .usecap{justify-self:start;margin-top:4px;padding:6px 12px;font-size:13px;border-radius:8px}
 .hist .st.ok{color:var(--ok);font-weight:600}.hist .st.bad{color:var(--bad);font-weight:600}
 .setup{display:grid;gap:10px}
 </style>
@@ -180,6 +181,8 @@ let lastShare=null, stream=null, recorder=null, chunks=[], recStart=0, recTick=n
 function fmt(s){ s=Math.max(0,Math.round(s)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
 function logLine(cls, text, link, linkText){ const d=document.createElement("div"); d.className=cls; d.textContent=text; if(link){ d.append(" "); const a=document.createElement("a"); a.href=link; a.target="_blank"; a.rel="noopener"; a.textContent=linkText||"Open"; d.append(a);} $("log").append(d); return d; }
 function setBar(p){ $("bar").hidden=false; $("barfill").style.width=Math.round(p*100)+"%"; }
+// Keep a copy of the caption on the phone as it's typed, so closing the app doesn't lose it.
+function saveDraft(){ if (mode!=="practivist") ls.set("capdraft_"+mode, $("caption").value); }
 function captionText(){ return $("caption").value.trim(); }
 function epLink(){ return $("eplink").value.trim(); }
 function activeGroups(){ return MODES[mode].brand==="ft6" ? ["ft6","personal"] : ["personal"]; }
@@ -203,6 +206,7 @@ function setMode(m){
   $("vidhint").textContent="Nothing recorded yet."; $("vidhint").className="hint";
   $("caption").placeholder = m==="practivist" ? "New Practivist pod is out! …" : m==="personal" ? "Caption for your personal accounts." : "What's today's Daily Jason about?";
   ls.set("mode", m);
+  if (m!=="practivist" && !$("caption").value) $("caption").value = ls.get("capdraft_"+m, "");
   renderNets(); updateReady();
   if (m==="practivist") loadEpisode();
 }
@@ -329,7 +333,7 @@ async function go(){
     entry.status = res.allOk ? "scheduled" : "partial";
     lastShare = { file: blob ? new File([blob], filename || "postradamus.mp4", { type: blobMime }) : null, caption: cap, link: mode==="practivist" ? epLink() : "" };
     $("fbBtn").hidden=false; $("fbhint").hidden=false;
-    if (res.allOk){ blob=null; $("playback").hidden=true; $("imgprev").hidden=true; $("stage").hidden=true; $("recLabelText").textContent="Start Recording"; $("timer").hidden=true; $("vidhint").textContent="Nothing recorded yet."; $("vidhint").className="hint"; if (mode!=="practivist") $("caption").value=""; }
+    if (res.allOk){ blob=null; $("playback").hidden=true; $("imgprev").hidden=true; $("stage").hidden=true; $("recLabelText").textContent="Start Recording"; $("timer").hidden=true; $("vidhint").textContent="Nothing recorded yet."; $("vidhint").className="hint"; if (mode!=="practivist"){ $("caption").value=""; saveDraft(); } }
   } catch(e){ logLine("bad", e.message); entry.status="failed"; entry.error=e.message; setBar(0); }
   const hist=ls.get("hist",[]); hist.unshift(entry); ls.set("hist", hist.slice(0,20)); renderHistory();
   busy=false; updateReady();
@@ -341,7 +345,12 @@ function renderHistory(){
     const w=document.createElement("div"); w.className="when"; w.textContent=(MODES[d.mode]?MODES[d.mode].label:d.mode)+" · "+new Date(d.at).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})+(d.filename?" · "+d.filename:"");
     const c=document.createElement("div"); c.textContent=(d.caption||"").slice(0,140);
     const s=document.createElement("div"); s.className="st "+(d.status==="scheduled"?"ok":d.status==="working"?"":"bad"); s.textContent={scheduled:"Scheduled ✓",partial:"Partly failed",failed:"Failed: "+(d.error||""),working:"…"}[d.status]||d.status;
-    it.append(w,c,s); h.append(it);
+    it.append(w,c,s);
+    // One tap puts this post's full caption back in the Caption box (handy after a failed post).
+    if (d.caption){ const u=document.createElement("button"); u.type="button"; u.className="usecap"; u.textContent="Use this caption";
+      u.addEventListener("click", ()=>{ $("caption").value=d.caption; ls.set("autocap", false); saveDraft(); updateReady(); $("caption").scrollIntoView({behavior:"smooth", block:"center"}); });
+      it.append(u); }
+    h.append(it);
   }
 }
 
@@ -352,7 +361,7 @@ $("recBtn").addEventListener("click", ()=>{ if (recorder && recorder.state==="re
 $("redoBtn").addEventListener("click", ()=>{ blob=null; $("playback").hidden=true; $("redoBtn").hidden=true; $("vidhint").textContent="Nothing recorded yet."; $("vidhint").className="hint"; updateReady(); startCamera(); });
 $("fileIn").addEventListener("change", e=>{ usePickedFile(e.target.files[0]); e.target.value=""; });
 $("camIn").addEventListener("change", e=>{ usePickedFile(e.target.files[0]); e.target.value=""; });
-$("caption").addEventListener("input", ()=>{ ls.set("autocap", false); updateReady(); });
+$("caption").addEventListener("input", ()=>{ ls.set("autocap", false); saveDraft(); updateReady(); });
 $("eplink").addEventListener("input", updateReady);
 $("refreshEp").addEventListener("click", ()=>{ ls.set("autocap", true); loadEpisode(); });
 $("goBtn").addEventListener("click", go);
