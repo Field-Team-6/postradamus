@@ -36,7 +36,17 @@ function rememberKeyHeader() {
   return { 'Set-Cookie': KEY_COOKIE + '=' + encodeURIComponent(process.env.APP_KEY) + '; Path=/; Max-Age=31536000; Secure; HttpOnly; SameSite=Lax' };
 }
 // 'strong' = always read the newest saved copy (the default can hand back a copy up to ~60s old).
-function store() { return getStore({ name: 'postradamus', consistency: 'strong' }); }
+// Netlify refuses 'strong' reads for this kind of function (the "uncachedEdgeURL" error),
+// so ask for the newest copy and quietly fall back to a normal read if Netlify says no.
+function store() {
+  const s = getStore('postradamus');
+  const plainGet = s.get.bind(s);
+  s.get = async (key, opts) => {
+    try { return await plainGet(key, { ...(opts || {}), consistency: 'strong' }); }
+    catch (e) { return plainGet(key, opts); }
+  };
+  return s;
+}
 function siteUrl(event) {
   return process.env.URL || ('https://' + event.headers.host);
 }
